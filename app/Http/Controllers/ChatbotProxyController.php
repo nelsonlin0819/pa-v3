@@ -93,6 +93,7 @@ class ChatbotProxyController extends Controller {
 		}
 
 		$params = is_array($data['params'] ?? null) ? $data['params'] : [];
+		$params = $this->withDefaultRange($params);
 
 		try {
 			$upstream = Http::timeout(30)
@@ -108,6 +109,23 @@ class ChatbotProxyController extends Controller {
 		}
 
 		return response($upstream->body(), $upstream->status(), ['Content-Type' => 'application/json']);
+	}
+
+	/**
+	 * An unscoped reference search full-scans the transactions table on the
+	 * gateway (>30s), so default the window to today (Asia/Taipei, sent as
+	 * unix timestamps to avoid cross-server timezone drift) whenever either
+	 * bound is missing.
+	 */
+	protected function withDefaultRange(array $params): array {
+		$todayStart = (new \DateTimeImmutable('today 00:00:00', new \DateTimeZone('Asia/Taipei')))->getTimestamp();
+		if (!isset($params['from']) || $params['from'] === '') {
+			$params['from'] = $todayStart;
+		}
+		if (!isset($params['to']) || $params['to'] === '') {
+			$params['to'] = $todayStart + 86399;
+		}
+		return $params;
 	}
 
 	protected function verifyTurnstile(string $token, Request $request): bool {
