@@ -6,7 +6,7 @@ return [
 
     'allowed_methods' => ['GET', 'POST', 'OPTIONS'],
 
-    'allowed_origins' => [env('FRONTEND_ORIGIN', 'https://chatbot-transaction-frontend.15064719d.workers.dev')],
+    'allowed_origins' => [env('FRONTEND_ORIGIN', 'https://pa-v3.15064719d.workers.dev')],
 
     'allowed_origins_patterns' => [],
 
