@@ -35,7 +35,7 @@ class ChatbotProxyController extends Controller {
 				],
 				'actions' => [
 					'transaction.query'  => ['keyword (required)', 'from (YYYY-MM-DD)', 'to (YYYY-MM-DD)'],
-					'transaction.refund' => ['keyword (required)', 'from (YYYY-MM-DD)', 'to (YYYY-MM-DD)'],
+					'transaction.refund' => ['keyword (required)', 'merchant_reference (required)', 'from (YYYY-MM-DD)', 'to (YYYY-MM-DD)'],
 				],
 			],
 		]);
@@ -94,6 +94,10 @@ class ChatbotProxyController extends Controller {
 
 		$params = is_array($data['params'] ?? null) ? $data['params'] : [];
 		$params = $this->withDefaultRange($params);
+
+		if ($action === 'transaction.refund' && trim((string) ($params['merchant_reference'] ?? '')) === '') {
+			return response()->json(['ok' => false, 'error' => 'merchant_reference_required'], 400);
+		}
 
 		try {
 			$upstream = Http::timeout(30)
