@@ -18,14 +18,12 @@ use Illuminate\Support\Facades\Http;
  *     -> ticket consumed atomically, body relayed to the IT-internal chatbot
  *        gateway API; upstream body + HTTP status returned verbatim.
  */
-class ChatbotProxyController extends Controller
-{
+class ChatbotProxyController extends Controller {
 	public const TOKEN_TTL = 600;
 
 	public const ALLOWED_ACTIONS = ['transaction.query', 'transaction.refund'];
 
-	public function usage(): JsonResponse
-	{
+	public function usage(): JsonResponse {
 		return response()->json([
 			'ok'      => true,
 			'service' => 'chatbot-proxy',
@@ -43,8 +41,7 @@ class ChatbotProxyController extends Controller
 		]);
 	}
 
-	public function issueCsrf(Request $request): JsonResponse
-	{
+	public function issueCsrf(Request $request): JsonResponse {
 		if ((string) config('services.turnstile.secret') !== '') {
 			$turnstileToken = (string) $request->header('X-Turnstile-Token', '');
 			if ($turnstileToken === '' || !$this->verifyTurnstile($turnstileToken, $request)) {
@@ -71,8 +68,7 @@ class ChatbotProxyController extends Controller
 		]);
 	}
 
-	public function proxy(Request $request)
-	{
+	public function proxy(Request $request) {
 		$csrf = (string) $request->header('X-Csrf-Token', '');
 		if (strlen($csrf) !== 64 || !ctype_xdigit($csrf)) {
 			return response()->json(['ok' => false, 'error' => 'csrf_token_required'], 401);
@@ -114,8 +110,7 @@ class ChatbotProxyController extends Controller
 		return response($upstream->body(), $upstream->status(), ['Content-Type' => 'application/json']);
 	}
 
-	protected function verifyTurnstile(string $token, Request $request): bool
-	{
+	protected function verifyTurnstile(string $token, Request $request): bool {
 		try {
 			$res = Http::asForm()
 				->timeout(10)
@@ -136,8 +131,7 @@ class ChatbotProxyController extends Controller
 	 * Real client IP behind Cloudflare (audit only — tickets are not IP-bound
 	 * because the CF egress POP can differ between the issue and consume call).
 	 */
-	protected function clientIp(Request $request): string
-	{
+	protected function clientIp(Request $request): string {
 		$ip = (string) $request->header('CF-Connecting-IP', '');
 		return $ip !== '' ? $ip : (string) $request->ip();
 	}
