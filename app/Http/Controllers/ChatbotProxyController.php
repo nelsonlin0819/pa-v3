@@ -107,10 +107,7 @@ class ChatbotProxyController extends Controller
 					'params' => $params,
 				]);
 		} catch (\Throwable $e) {
-<<<<<<< HEAD
 			\report($e);
-=======
->>>>>>> 3f0647e (init)
 			return response()->json(['ok' => false, 'error' => 'upstream_unreachable', 'message' => $e->getMessage()], 502);
 		}
 
