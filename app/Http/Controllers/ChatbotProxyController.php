@@ -15,13 +15,26 @@ use Illuminate\Support\Facades\Http;
  *        `pa-v3`.`csrf_token`, TTL 600s, expired rows cleaned on issue.
  *
  *   POST /api/proxy  (X-Csrf-Token: <ticket>, Content-Type: application/json)
- *     -> ticket consumed atomically, body relayed to the IT-internal chatbot
- *        gateway API; upstream body + HTTP status returned verbatim.
+ *     -> ticket consumed atomically, {action, params} translated to an MCP
+ *        JSON-RPC `tools/call` request against the gateway MCP server
+ *        (ACTION_GATEWAY/mcp/v1); upstream body + HTTP status returned
+ *        verbatim, so clients receive the raw JSON-RPC envelope.
  */
 class ChatbotProxyController extends Controller {
 	public const TOKEN_TTL = 600;
 
-	public const ALLOWED_ACTIONS = ['transaction.query', 'transaction.refund'];
+	/** action -> MCP tool name exposed by ACTION_GATEWAY/mcp/v1 */
+	public const ACTION_TOOLS = [
+		'transaction.query'        => 'TransactionQuery',
+		'transaction.refund'       => 'TransactionRefund',
+		'transaction.date-summary' => 'TransactionDateSummary',
+		'merchant.list'            => 'MerchantList',
+		'merchant.info'            => 'MerchantInfo',
+		'order.status'             => 'OrderStatusByMerchantReference',
+	];
+
+	/** Actions whose upstream tool scopes reference searches by [from, to]. */
+	public const RANGE_ACTIONS = ['transaction.query', 'transaction.refund'];
 
 	public function usage(): JsonResponse {
 		return response()->json([
@@ -34,8 +47,12 @@ class ChatbotProxyController extends Controller {
 					'/api/proxy' => ['Content-Type: application/json', 'X-Csrf-Token: <one-time ticket from /api/csrf>'],
 				],
 				'actions' => [
-					'transaction.query'  => ['keyword (required)', 'from (YYYY-MM-DD)', 'to (YYYY-MM-DD)'],
-					'transaction.refund' => ['keyword (required)', 'merchant_reference (required)', 'from (YYYY-MM-DD)', 'to (YYYY-MM-DD)'],
+					'transaction.query'        => ['keyword (required)', 'from (YYYY-MM-DD)', 'to (YYYY-MM-DD)'],
+					'transaction.refund'       => ['keyword (required)', 'merchant_reference (required)', 'from (YYYY-MM-DD)', 'to (YYYY-MM-DD)'],
+					'transaction.date-summary' => ['date (YYYY-MM-DD, required)', 'currency (default HKD)', 'channel (provider name, optional)'],
+					'merchant.list'            => ['keyword (required)', 'limit (default 50)'],
+					'merchant.info'            => ['merchant (code or name, required)'],
+					'order.status'             => ['merchant_reference (required)'],
 				],
 			],
 		]);
@@ -88,12 +105,14 @@ class ChatbotProxyController extends Controller {
 		}
 
 		$action = (string) ($data['action'] ?? '');
-		if (!in_array($action, self::ALLOWED_ACTIONS, true)) {
-			return response()->json(['ok' => false, 'error' => 'unknown_action', 'available' => self::ALLOWED_ACTIONS], 400);
+		if (!isset(self::ACTION_TOOLS[$action])) {
+			return response()->json(['ok' => false, 'error' => 'unknown_action', 'available' => array_keys(self::ACTION_TOOLS)], 400);
 		}
 
 		$params = is_array($data['params'] ?? null) ? $data['params'] : [];
-		$params = $this->withDefaultRange($params);
+		if (in_array($action, self::RANGE_ACTIONS, true)) {
+			$params = $this->withDefaultRange($params);
+		}
 
 		if ($action === 'transaction.refund' && trim((string) ($params['merchant_reference'] ?? '')) === '') {
 			return response()->json(['ok' => false, 'error' => 'merchant_reference_required'], 400);
@@ -104,8 +123,13 @@ class ChatbotProxyController extends Controller {
 				->connectTimeout(10)
 				->withToken((string) config('services.chatbot-upstream.key'))
 				->post((string) config('services.chatbot-upstream.url'), [
-					'action' => $action,
-					'params' => $params,
+					'jsonrpc' => '2.0',
+					'id'      => random_int(1, PHP_INT_MAX),
+					'method'  => 'tools/call',
+					'params'  => [
+						'name'      => self::ACTION_TOOLS[$action],
+						'arguments' => $params,
+					],
 				]);
 		} catch (\Throwable $e) {
 			\report($e);

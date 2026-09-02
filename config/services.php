@@ -35,7 +35,8 @@ return [
         ],
     ],
 
-    // IT-internal chatbot gateway (upstream relay target of /api/proxy).
+    // Gateway MCP server, ACTION_GATEWAY/mcp/v1 (upstream of /api/proxy;
+    // Bearer key + JSON-RPC tools/call).
     'chatbot-upstream' => [
         'url' => env('UPSTREAM_URL'),
         'key' => env('UPSTREAM_API_KEY'),
