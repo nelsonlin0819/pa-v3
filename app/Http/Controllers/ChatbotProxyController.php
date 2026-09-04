@@ -19,6 +19,8 @@ use Illuminate\Support\Facades\Http;
  *        JSON-RPC `tools/call` request against the gateway MCP server
  *        (ACTION_GATEWAY/mcp/v1); upstream body + HTTP status returned
  *        verbatim, so clients receive the raw JSON-RPC envelope.
+ *
+ *   GET  /api/csrf | /api/proxy -> human-readable usage page.
  */
 class ChatbotProxyController extends Controller {
 	public const TOKEN_TTL = 600;
@@ -36,24 +38,25 @@ class ChatbotProxyController extends Controller {
 	/** Actions whose upstream tool scopes reference searches by [from, to]. */
 	public const RANGE_ACTIONS = ['transaction.query', 'transaction.refund'];
 
-	public function usage(): JsonResponse {
-		return response()->json([
-			'ok'      => true,
-			'service' => 'chatbot-proxy',
-			'usage'   => [
-				'method'    => 'POST',
-				'endpoints' => [
-					'/api/csrf'  => ['X-Turnstile-Token (when Turnstile is enabled)'],
-					'/api/proxy' => ['Content-Type: application/json', 'X-Csrf-Token: <one-time ticket from /api/csrf>'],
+	public function usage(): \Illuminate\View\View {
+		return view('usage', [
+			'endpoints' => [
+				'/api/csrf'  => [
+					'method'  => 'POST',
+					'headers' => ['X-Turnstile-Token (when Turnstile is enabled)'],
 				],
-				'actions' => [
-					'transaction.query'        => ['keyword (required)', 'from (YYYY-MM-DD)', 'to (YYYY-MM-DD)'],
-					'transaction.refund'       => ['keyword (required)', 'merchant_reference (required)', 'from (YYYY-MM-DD)', 'to (YYYY-MM-DD)'],
-					'transaction.date-summary' => ['date (YYYY-MM-DD, required)', 'currency (default HKD)', 'channel (provider name, optional)'],
-					'merchant.list'            => ['keyword (required)', 'limit (default 50)'],
-					'merchant.info'            => ['merchant (code or name, required)'],
-					'order.status'             => ['merchant_reference (required)'],
+				'/api/proxy' => [
+					'method'  => 'POST',
+					'headers' => ['Content-Type: application/json', 'X-Csrf-Token: <one-time ticket from /api/csrf>'],
 				],
+			],
+			'actions' => [
+				'transaction.query'        => ['keyword (required)', 'from (YYYY-MM-DD)', 'to (YYYY-MM-DD)'],
+				'transaction.refund'       => ['keyword (required)', 'merchant_reference (required)', 'from (YYYY-MM-DD)', 'to (YYYY-MM-DD)'],
+				'transaction.date-summary' => ['date (YYYY-MM-DD, required)', 'currency (default HKD)', 'channel (provider name, optional)'],
+				'merchant.list'            => ['keyword (required)', 'limit (default 50)'],
+				'merchant.info'            => ['merchant (code or name, required)'],
+				'order.status'             => ['merchant_reference (required)'],
 			],
 		]);
 	}
