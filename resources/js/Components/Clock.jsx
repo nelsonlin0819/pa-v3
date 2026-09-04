@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
-import { createRoot } from 'react-dom/client';
 
-function Clock() {
+export default function Clock() {
     const [now, setNow] = useState(() => new Date());
 
     useEffect(() => {
@@ -18,15 +17,10 @@ function Clock() {
 
     return (
         <div className="text-center">
-            <p className="mb-2 text-sm tracking-widest text-slate-500 uppercase">{date}</p>
+            <p className="mb-2 text-sm uppercase tracking-widest text-slate-500">{date}</p>
             <time className="font-mono text-7xl font-bold tabular-nums text-cyan-300 drop-shadow-[0_0_25px_rgba(34,211,238,0.35)]">
                 {now.toLocaleTimeString('zh-Hant')}
             </time>
         </div>
     );
-}
-
-const el = document.getElementById('react-root');
-if (el) {
-    createRoot(el).render(<Clock />);
 }

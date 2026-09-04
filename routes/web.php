@@ -2,6 +2,4 @@
 
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('home', ['name' => 'Nelson']);
-});
+Route::inertia('/', 'Home', ['name' => 'Nelson'])->name('home');
