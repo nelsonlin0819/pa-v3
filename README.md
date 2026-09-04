@@ -40,7 +40,7 @@ pa-v3 的 Laravel backend，架在 AWS EC2（新加坡）+ Cloudflare Tunnel + A
 ## 部署（server）
 
 ```bash
-ssh -A nelson                # EC2 t4g.small, Ubuntu 26.04（-A 轉發 Mac 的 GitHub key）
+ssh nelson                # EC2 t4g.small, Ubuntu 26.04（server 已有自己的 GitHub key）
 cd /var/www/html/nelson
 sudo git pull
 sudo php artisan config:clear   # 有動 config/.env 時
