@@ -37,7 +37,7 @@ React 管線已就緒（`vite.config.js` 已掛 `@vitejs/plugin-react`，範例 
 ## 部署（server）
 
 ```bash
-ssh nelson                # EC2 t4g.small, Ubuntu 26.04
+ssh -A nelson                # EC2 t4g.small, Ubuntu 26.04
 cd /var/www/html/nelson
 sudo git pull
 sudo php artisan config:clear   # 有動 config/.env 時
