@@ -1,7 +1,3 @@
-# pa-v3 backend
-
-pa-v3 的 Laravel backend，架在 AWS EC2（新加坡）+ Cloudflare Tunnel + Access 後面，對外網址 <https://nelsonlys.com>（Access OTP 登入）。前端 SPA 在另一個 repo，部署於 Cloudflare Workers：<https://pa-v3.15064719d.workers.dev>。
-
 ## Stack
 
 - Laravel 13 / PHP 8.5 (php-fpm)
